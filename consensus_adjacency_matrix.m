@@ -1,23 +1,14 @@
-function A = consensus_adjacency_matrix(rcomm,y)
-%{
-Let "n" be the number of agents.
-
---- Inputs ---
-y: n by 2 array holding output data for all agents
-   e.g., y(j,2) is the second output for agent-j
-
---- Outputs ---
-A:  n by n adjacency matrix - see notes for details on construction
-%}
-
-% get the number of agents, as the number of rows of y
-n_agents = size(y, 1);
-
-% initialize A to be all zeros
-A = zeros(n_agents, n_agents);
-
+function A = consensus_adjacency_matrix(rcom,y)
 % OPINION algorithm
 % calculate adjacency based on radius
+
+%Determines number of rows in the input matrix
+n_agents = size(y, 1);
+
+%Initializes a nxn matrix filled with zeros
+A = zeros(n_agents);
+
+%Fill the matrix y with a 1 if the radius is close enough
 for i = 1:n_agents
     for j = 1:n_agents
        if i ~= j
@@ -25,7 +16,9 @@ for i = 1:n_agents
             agent2 = [y(j,1), y(j,2)];
             vector = agent2 - agent1;
             magnitude = norm(vector);
-            if magnitude <= rcomm
+            if magnitude <= rcom
                A(i,j) = 1;
-
+            end
+       end
+    end
 end
