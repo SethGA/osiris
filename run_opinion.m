@@ -1,18 +1,17 @@
 %% HEADER 
 %{
 APSC 200 MODULE P2 - MTHE - CONSENSUS ALGORITHM TEMPLATE
-Author: S. Dougherty, Math & Eng., Queen's University
-Release Date: 2022-11-08
+Author: H. Wilson, B. Van Eden, Math & Eng., Queen's University
+Release Date: 2023-06-01
 
-Inputs:     consensus_input.csv = initial values for all agents
-Outputs:    consensus_output.csv = time vs state data
-            consensus_output.mat = time, state and network data 
+Inputs:     opinion_input.csv = initial values for all agents
+Outputs:    opinion_output.csv = time vs state data
+            opinion_output.mat = time, state and network data 
                            (req'd for annimation)
             Time vs state and arena plots
 
-Functions (user-defined):   leader.m
-                            consensus_adjacency_matrix.m
-                            consensus_filter.m
+Functions (user-defined):   opinion_adjacency_matrix.m
+                            opinion_filter.m
                             update_agents.m
 
 The I/O descriptions can be found in the preamble of each function.
@@ -22,18 +21,17 @@ of this simulation.  It can only be run once this script has been
 successfully executed.
 
 --- Revision History ---
-2022-10-19: Initial release
-2022-11-08: Fixed consensus filter initialization for formation w leader
+2023-06-01: Initial release
 
 ***************************************************************************
-This script simulates the consensus algorithm outlined in the APSC 200 MTHE 
+This script simulates the opinion algorithm outlined in the APSC 200 MTHE 
 Course Manual. The script has been designed with transparency in mind.
 (i.e., It allows you to see how all of the pieces fit together.) 
 
 For this script to execute successfully, two tasks must be completed:
 1: All of the functions listed above must be built.
 2: The simulation parameters (marked by UPPERCASE letters) and the initial 
-   values (specified in consensus_input.csv) must be updated to match your
+   values (specified in opinion_input.csv or opinion_input_2.csv) must be updated to match your
    application. 
 
 Advanced users are welcome to alter this script to meet their needs; 
@@ -45,65 +43,46 @@ instructor/TAs to help with large structual modifications to this script.)
 %% PARAMETERS - can edit w/o comprimising script execution
 
 % simulation parameters
-TFINAL = 50;
-NSTEPS = 200;
+TFINAL = 5;
+NSTEPS = 500;
 
-% agent parameters
-K = 4;
-RANDOM_AGENTS = 6;  % # of randomly generated agents scattered on [-K,K]^2
-                    % if = 0, then positions at t = 0 are given by
-                    % consensus_input.csv
-
-FLOCKING_SYSTEM = 0;
-% if 0 = formation/rendezous, 1 = flocking
-
-LEADER_SYSTEM = 0;
-% if 0 = no leader, 1 = leader, not influenced by network
-
-INIT_ENERGY = 100;      % initial "energy" stored in each agent
+N_DIMENSIONS = 1;
+% 1 or 2 depending on Application
 
 % plot toggles - set to 0 to suppress plot
 SHOW_ARENA = 1;         % 2D plot showing agent paths
 SHOW_OUTPUT = 1;        % output vs time plot
-SHOW_CONSENSUS = 1;     % consensus state vs time plot
-SHOW_ENERGY = 1;        % energy vs time plot
+SHOW_OPINION = 1;     % consensus state vs time plot
 
 %% SETUP
 
 % importing initial values -----------------------------------------------
-if (RANDOM_AGENTS == 0)
-    initval = readmatrix('consensus_input.csv');  
-    nagents = length(initval);
-else
-    nagents = RANDOM_AGENTS;
-    initval = nan(nagents,2);
-    initval(:,1) = K * (2*rand(nagents,1) - 1);
-    initval(:,2) = K * (2*rand(nagents,1) - 1);
-    
-    % The following two lines initialize the consensus states with the
-    % agent's initial output value. This may not always be suitable. 
-    initval(:,3) = initval(:,1);
-    initval(:,4) = initval(:,2);
-end
+file = 'opinion_input';
+if (N_DIMENSIONS == 2), file = strcat(file, '_2'); end
+
+initval = readmatrix(file);  
+nagents = length(initval);
+
+rNoise = zeros(nagents, 1);
+lNoise = zeros(nagents, 1);
+if(N_DIMENSIONS == 1),lNoise = initval(:,3);rNoise = initval(:,4);end
 
 % pre-allocation & initialization -----------------------------------------
-P = nan(NSTEPS, nagents, 2);        % all output data 
-for i = 1:2
-    P(:,:,i) = ones(NSTEPS,1) * initval(:,i)';
+P = zeros(NSTEPS, nagents, 2);% all output data 
+for i = 1:N_DIMENSIONS
+    P(:,:,i) = ones(NSTEPS,1) * initval(:,i+1)';
 end
 % P(i,j,k) is agent-j's k-th output at the i-th timestep; k = {1,2}
+% If Dimension is 1, the P(i,j,2) will be zero
 
-Q = nan(NSTEPS, nagents, 2);         % all consensus state data
-for i = 1:2
-    Q(:,:,i) = ones(NSTEPS,1) * initval(:,i+2)';
+Q = zeros(NSTEPS, nagents, 2);         % all consensus state data
+for i = 1:N_DIMENSIONS
+    Q(:,:,i) = ones(NSTEPS,1) * initval(:,i+1)';
 end
 % same structure as P but for consensus state
 
 Pdot = zeros(NSTEPS, nagents, 2);
 % same structure as P but for time derivative of output
-
-E = INIT_ENERGY * ones(NSTEPS,nagents);     % all energy data
-% E(i,j) is agent-j's energy at the i-th timestep
 
 G = nan(nagents, nagents, NSTEPS-1);  % all network data
 % G(:,:,i) is the Laplacian matrix at the i-th timestep
@@ -112,25 +91,7 @@ G = nan(nagents, nagents, NSTEPS-1);  % all network data
 %% SIMULATION
 t = linspace(0,TFINAL,NSTEPS)'; 
 tstep = t(2);
-
-save_head = 1;      
-if LEADER_SYSTEM
-    % ============================================================= WEEK 8
-    % A leader's behaviour is not influenced by other agents
-    [leadp, leadv] = leader(t);
-    for i =1:2
-        P(:,1,i) = leadp(:,i);
-        Pdot(:,1,i) = leadv(:,i);
-
-        % writing the leader dynamics to the consensus filter
-        if FLOCKING_SYSTEM
-            Q(:,1,i) = Pdot(:,1,i);
-        else
-            Q(:,1,i) = P(:,1,i);
-        end
-    end
-    save_head = 2; % protects against overwriting a leaders dynamics
-end
+rComms = initval(:,1);
 
 for i = 2:NSTEPS-1
     % repackaging for easy use
@@ -140,21 +101,22 @@ for i = 2:NSTEPS-1
     
     % ============================================================= WEEK 9
     % identifying which agents can communicate with one another
-    G(:,:,i) = consensus_adjacency_matrix(p0); 
+    G(:,:,i) = opinion_adjacency_matrix(rComms, p0); 
     
-    D = diag(sum(G(:,:,i)));        % degree matrix
+    D = diag(sum(G(:,:,i), 2));        % degree matrix
     L = D - G(:,:,i);               % Laplacian matrix
 
     % ============================================================= WEEK 10
     % updating consensus state of all agents
-    q1 = consensus_filter(q0, L, t(i), tstep);
+    q1 = opinion_filter(q0, L, t(i), tstep);
     
     % ============================================================= WEEK 11
     % updating output of all agents while 
-    [p1, E(i+1,:)] = update_agents(p0, pdot, q1, E(i,:), tstep);
+
+    p1 = update_agents(p0, pdot, q1, tstep, lNoise, rNoise); %
 
     % saving new output and consensus state for plotting
-    for k = save_head:nagents
+    for k = 1:nagents
         for j = 1:2
             P(i+1,k,j) = p1(k,j)';
             Q(i+1,k,j) = q1(k,j)';
@@ -214,7 +176,7 @@ if (SHOW_OUTPUT)
     ylabel("p2")
 end
 
-if (SHOW_CONSENSUS) 
+if (SHOW_OPINION) 
     figure
     subplot(211)
     plot(t, Q(:,:,1))
@@ -229,18 +191,10 @@ if (SHOW_CONSENSUS)
     ylabel("q2")
 end
 
-if (SHOW_ENERGY)
-    figure
-    plot(t,E)
-    xlabel("t")
-    ylabel("Energy")
-    legend(legend_labels);
-end
-
 %% EXPORTING DATA
 
 % --- Matlab - for arena animation ---
-save("consensus_output.mat", "t", "P", "G");  
+save("opinion_output.mat", "t", "P", "G");  
 
 % --- Excel/Other - for further analysis ---
 p1_ = P(:,:,1);
@@ -248,8 +202,8 @@ p2_ = P(:,:,2);
 q1_ = Q(:,:,1);
 q2_ = Q(:,:,2);
 output_table = [array2table(t) array2table(p1_) array2table(p2_) ...
-    array2table(q1_) array2table(q2_) array2table(E)];
-writetable(output_table,"consensus_output.csv"); 
+    array2table(q1_) array2table(q2_)];
+writetable(output_table,"opinion_output.csv"); 
 
 %{
 ***************************** CSV headers ******************************
