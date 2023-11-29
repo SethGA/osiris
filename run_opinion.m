@@ -43,10 +43,12 @@ instructor/TAs to help with large structual modifications to this script.)
 %% PARAMETERS - can edit w/o comprimising script execution
 
 % simulation parameters
-TFINAL = 5;
-NSTEPS = 500;
+% Changes the time in which the simulation is ran.
+TFINAL = 200;
+% Not to sure set but I think it is how many steps each agent takes
+NSTEPS = 10000;
 
-N_DIMENSIONS = 1;
+N_DIMENSIONS = 2;
 % 1 or 2 depending on Application
 
 % plot toggles - set to 0 to suppress plot
