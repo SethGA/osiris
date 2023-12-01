@@ -1,22 +1,14 @@
 %% animate_network.m
-%{
-The purpose of this script is to allow the user to visualize how the
-network evolves over the course of the simulation.  
-
-                            *** NOTE *** 
-Either run_lloyds.m, run_consensus.m, or run_opinion.m must have been successfully 
-executed BEFORE animate_network.m is run.  This script uses the t, P and G 
-arrays to produce the visualization and so the data must already exist in
-the Workspace. 
-%}
+%%Run opioion before Animation
 figure
 %% PARAMETERS - can change w/o compromising script execution
 MAX_EDGE_WEIGHT = 1;
-UPDATE_LAG = 0.05;       % in seconds
+UPDATE_LAG = 0;       % in seconds
 R_COMM_EDGE_WEIGHT = 1;
 %% SIMULATION
 n=length(t)-1;
-for i = 2:n 
+%Changing the steps allows for the anmiation to run through faster.
+for i = 2:50:n
     Gt = digraph(G(:,:,i),'omitselfloops');
     wts = MAX_EDGE_WEIGHT * Gt.Edges.Weight/max(Gt.Edges.Weight);
     p = plot(Gt,'LineWidth',wts);
@@ -25,7 +17,7 @@ for i = 2:n
     %plot the radius of communication for each agent
     for j = 1:nagents
         centers = [p.XData(j) p.YData(j)];
-        viscircles(centers,rComms(j),'Color','black', 'LineWidth', R_COMM_EDGE_WEIGHT);
+        viscircles(centers,rComms(j),'Color','Black', 'LineWidth', R_COMM_EDGE_WEIGHT);
         text(centers(1,1)+0.75*rComms(j),centers(1,2)+0.75*rComms(j), string(j)); %label radius of communication
     end
     title(strcat('t = ',num2str(t(i),2)));

@@ -1,52 +1,9 @@
-%% HEADER 
-%{
-APSC 200 MODULE P2 - MTHE - CONSENSUS ALGORITHM TEMPLATE
-Author: H. Wilson, B. Van Eden, Math & Eng., Queen's University
-Release Date: 2023-06-01
-
-Inputs:     opinion_input.csv = initial values for all agents
-Outputs:    opinion_output.csv = time vs state data
-            opinion_output.mat = time, state and network data 
-                           (req'd for annimation)
-            Time vs state and arena plots
-
-Functions (user-defined):   opinion_adjacency_matrix.m
-                            opinion_filter.m
-                            update_agents.m
-
-The I/O descriptions can be found in the preamble of each function.
-
-animate_network.m generates a visualization of the network over the course
-of this simulation.  It can only be run once this script has been
-successfully executed.
-
---- Revision History ---
-2023-06-01: Initial release
-
-***************************************************************************
-This script simulates the opinion algorithm outlined in the APSC 200 MTHE 
-Course Manual. The script has been designed with transparency in mind.
-(i.e., It allows you to see how all of the pieces fit together.) 
-
-For this script to execute successfully, two tasks must be completed:
-1: All of the functions listed above must be built.
-2: The simulation parameters (marked by UPPERCASE letters) and the initial 
-   values (specified in opinion_input.csv or opinion_input_2.csv) must be updated to match your
-   application. 
-
-Advanced users are welcome to alter this script to meet their needs; 
-however, it will be done at their own risk. (i.e., Do not rely on the
-instructor/TAs to help with large structual modifications to this script.)
-***************************************************************************
-%}
-
 %% PARAMETERS - can edit w/o comprimising script execution
-
 % simulation parameters
 % Changes the time in which the simulation is ran.
-TFINAL = 200;
+TFINAL = 400;
 % Not to sure set but I think it is how many steps each agent takes
-NSTEPS = 10000;
+NSTEPS = 10000 ;
 
 N_DIMENSIONS = 2;
 % 1 or 2 depending on Application
@@ -60,7 +17,7 @@ SHOW_OPINION = 1;     % consensus state vs time plot
 
 % importing initial values -----------------------------------------------
 file = 'opinion_input';
-if (N_DIMENSIONS == 2), file = strcat(file, '_2'); end
+if (N_DIMENSIONS == 2), file = strcat(file, '_2iii'); end
 
 initval = readmatrix(file);  
 nagents = length(initval);
